@@ -7,12 +7,16 @@ export default class BattleScene extends Phaser.Scene {
     }
 
     create() {
+        this.backgroundGraphics = this.add.graphics();
+        this.interfaceColor = 0xFFFFFF;
         this.add.rectangle(0, 0, this.sys.game.config.width, this.sys.game.config.height, 0x87CEEB).setOrigin(0, 0);
         this.createBalanceBars();
         this.createActionButtons();
         this.createWrestlers();
         this.createKeyboardInput();
         this.createPlayerIndicator();
+        this.currentPlayerTurn = this.player1;
+        this.changeInterfaceColor(this.interfaceColor);
     }
 
     createKeyboardInput() {
@@ -31,10 +35,10 @@ export default class BattleScene extends Phaser.Scene {
 
     createBalanceBars() {
         // Player 1 balance bar
-    this.player1BalanceBar = this.add.rectangle(20, 20, 100, 10, 0x00ff00).setOrigin(0, 0);
-    
-    // Player 2 balance bar
-    this.player2BalanceBar = this.add.rectangle(this.sys.game.config.width - 120, 20, 100, 10, 0x00ff00).setOrigin(0, 0);
+        this.player1BalanceBar = this.add.rectangle(20, 20, 100, 10, 0x00ff00).setOrigin(0, 0);
+        
+        // Player 2 balance bar
+        this.player2BalanceBar = this.add.rectangle(this.sys.game.config.width - 120, 20, 100, 10, 0x00ff00).setOrigin(0, 0);
     }
 
     createActionButtons() {
@@ -45,14 +49,14 @@ export default class BattleScene extends Phaser.Scene {
         const buttonPadding = 10;
         const buttonX = (this.sys.game.config.width - buttonWidth) / 2;
         const buttonY = this.sys.game.config.height - buttonHeight - buttonPadding;
-        const moveButtonText = this.add.text(
-            buttonX + buttonWidth / 2,
-            buttonY - buttonHeight - buttonPadding + buttonHeight / 2,
-            'Move',
-            { fontSize: '24px', fill: '#000' }
-        ).setOrigin(0.5, 0.5);
-        this.actionButtons.add(moveButtonText);
-        const pushButton = this.add.rectangle(buttonX, buttonY, buttonWidth, buttonHeight, 0xff0000).setOrigin(0, 0);
+        
+        const pushButton = this.add.rectangle(
+            buttonX,
+            buttonY,
+            buttonWidth,
+            buttonHeight,
+            0xff0000
+        ).setOrigin(0, 0);
         pushButton.setInteractive();
         pushButton.on('pointerdown', () => {
         this.performAction('push');
@@ -70,9 +74,17 @@ export default class BattleScene extends Phaser.Scene {
             this.showMoveOptions();
           });
           this.actionButtons.add(moveButton);
+        const moveButtonText = this.add.text(
+            buttonX + buttonWidth / 2,
+            buttonY - buttonHeight - buttonPadding + buttonHeight / 2,
+            'Move',
+            { fontSize: '24px', fill: '#000' }
+        ).setOrigin(0.5, 0.5);
+        this.actionButtons.add(moveButtonText);
+        this.actionButtons.setDepth(1);
         
-          // Create move options (hidden by default)
-          this.createMoveOptions();
+        // Create move options (hidden by default)
+        this.createMoveOptions();
     }
 
     createMoveOptions() {
@@ -82,71 +94,32 @@ export default class BattleScene extends Phaser.Scene {
         const buttonPadding = 10;
         const optionsX = (this.sys.game.config.width - buttonWidth) / 2;
         const optionsY = this.sys.game.config.height - buttonHeight * 3 - buttonPadding * 2;
-        // Sidestep button
-        const sidestepButton = this.add.rectangle(
-            optionsX,
-            optionsY,
-            buttonWidth,
-            buttonHeight,
-            0x00ff00
-        ).setOrigin(0, 0);
-        sidestepButton.setInteractive();
-        sidestepButton.on('pointerdown', () => {
-            this.playerSelectMove('sidestep');
-        });
-        const sidestepButtonText = this.add.text(
-            optionsX + buttonWidth / 2,
-            optionsY + buttonHeight / 2,
-            'Sidestep',
-            { fontSize: '18px', fill: '#000' }
-        ).setOrigin(0.5, 0.5);
-        this.moveOptions.add(sidestepButtonText);
-        this.moveOptions.add(sidestepButton);
-
-        // Forward button
-        const forwardButton = this.add.rectangle(
-            optionsX,
-            optionsY + buttonHeight + buttonPadding,
-            buttonWidth,
-            buttonHeight,
-            0xffa500
-        ).setOrigin(0, 0);
-        forwardButton.setInteractive();
-        forwardButton.on('pointerdown', () => {
-            this.playerSelectMove('forward');
-        });
-        const forwardButtonText = this.add.text(
-            optionsX + buttonWidth / 2,
-            optionsY + buttonHeight + buttonPadding + buttonHeight / 2,
-            'Forward',
-            { fontSize: '18px', fill: '#000' }
-        ).setOrigin(0.5, 0.5);
-        this.moveOptions.add(forwardButtonText);
-        this.moveOptions.add(forwardButton);
-
-        // Retreat button
-        const retreatButton = this.add.rectangle(
-            optionsX,
-            optionsY + (buttonHeight + buttonPadding) * 2,
-            buttonWidth,
-            buttonHeight,
-            0x00ffff
-        ).setOrigin(0, 0);
-        retreatButton.setInteractive();
-        retreatButton.on('pointerdown', () => {
-            this.playerSelectMove('retreat');
-        });
-        const retreatButtonText = this.add.text(
-            optionsX + buttonWidth / 2,
-            optionsY + (buttonHeight + buttonPadding) * 2 + buttonHeight / 2,
-            'Retreat',
-            { fontSize: '18px', fill: '#000' }
-        ).setOrigin(0.5, 0.5);
-        this.moveOptions.add(retreatButtonText);
         
-        this.moveOptions.add(retreatButton);
-
+        this.createMoveButton('Forward', optionsX, optionsY, 0xffa500);
+        this.createMoveButton('Retreat', optionsX, optionsY + buttonHeight + buttonPadding, 0x00ffff);
+        this.createMoveButton('Sidestep Left', optionsX, optionsY + (buttonHeight + buttonPadding) * 2, 0x00ff00);
+        this.createMoveButton('Sidestep Right', optionsX + buttonWidth * 1.5 + buttonPadding, optionsY + (buttonHeight + buttonPadding) * 2, 0xff69b4);
+        this.moveOptions.setDepth(1);
         this.moveOptions.setVisible(false);
+    }
+
+    createMoveButton(moveName, x, y, color) {
+        const buttonWidth = 120;
+        const buttonHeight = 50;
+
+        const moveButton = this.add.rectangle(x, y, buttonWidth, buttonHeight, color).setOrigin(0, 0);
+        moveButton.setInteractive();
+        moveButton.on('pointerdown', () => {
+            this.playerSelectMove(moveName);
+        });
+        const moveButtonText = this.add.text(
+            x + buttonWidth / 2,
+            y + buttonHeight / 2,
+            moveName,
+            { fontSize: '18px', fill: '#000' }
+        ).setOrigin(0.5, 0.5);
+        this.moveOptions.add(moveButton);
+        this.moveOptions.add(moveButtonText);
     }
 
     createPlayerIndicator() {
@@ -173,49 +146,75 @@ export default class BattleScene extends Phaser.Scene {
         if (!this.player1Move) {
             this.player1Move = move;
             this.changeInterfaceColor(this.player2.color);
+            this.moveOptions.setVisible(false);
         } else {
             this.player2Move = move;
             this.executeMoves();
+            this.moveOptions.setVisible(false);
         }
     }
       
     changeInterfaceColor(color) {
-        // Change the color of the interface elements, such as action buttons and move options
-        // ...
-        if (color === this.player1.color) {
-            this.playerIndicator.setText('Player 1');
-        } else {
-            this.playerIndicator.setText('Player 2');
-        }
+        this.interfaceColor = color;
+        this.backgroundGraphics.clear();
+        this.backgroundGraphics.fillStyle(color, 0.5);
+        this.backgroundGraphics.fillRect(0, 0, this.sys.game.config.width, 50);
+        const currentPlayerText = this.player1Move ? 'Player 2' : 'Player 1';
+        this.playerIndicator.setText(currentPlayerText);
     }
     
     executeMoves() {
         console.log('Player 1 Move:', this.player1Move);
         console.log('Player 2 Move:', this.player2Move);
     
+        // Calculate angle to opponent's initial position for both players
+        let dx = this.player2.wrestler.x - this.player1.wrestler.x;
+        let dy = this.player2.wrestler.y - this.player1.wrestler.y;
+
+        const angleToOpponent1 = Math.atan2(dy, dx);
+        const angleToOpponent2 = angleToOpponent1 + Math.PI;
+
         // Implement move execution logic here
-        this.applyPlayerMove(this.player1, this.player1Move);
-        this.applyPlayerMove(this.player2, this.player2Move);
+        this.applyPlayerMove(this.player1, this.player1Move, angleToOpponent1);
+        this.applyPlayerMove(this.player2, this.player2Move, angleToOpponent2);
         // Reset moves and change interface color back to Player 1
         this.player1Move = null;
         this.player2Move = null;
         this.changeInterfaceColor(this.player1.color);
+        this.moveOptions.setVisible(false);
     }
 
-    applyPlayerMove(player, move) {
+    applyPlayerMove(player, move, angleToOpponent) {
         const speed = 50;
+        const duration = 500;
+        const opponent = player.isPlayer1 ? this.player2 : this.player1;
+
+        console.log('angleToOpponent:', angleToOpponent)
+        const moveConfig = {
+            targets: player.wrestler,
+            duration: duration,
+            ease: 'Linear'
+        };
 
         switch (move) {
-            case 'sidestep':
-                player.wrestler.x += player.isplayer1 ? -speed : speed;
+            case 'Forward':
+                moveConfig.x = player.wrestler.x + speed * Math.cos(angleToOpponent);
+                moveConfig.y = player.wrestler.y + speed * Math.sin(angleToOpponent);
                 break;
-            case 'forward':
-                player.wrestler.y -= speed;
+            case 'Retreat':
+                moveConfig.x = player.wrestler.x - speed * Math.cos(angleToOpponent);
+                moveConfig.y = player.wrestler.y - speed * Math.sin(angleToOpponent);
                 break;
-            case 'retreat':
-                player.wrestler.y += speed;
+            case 'Sidestep Left':
+                moveConfig.x = player.wrestler.x - speed * Math.sin(angleToOpponent);
+                moveConfig.y = player.wrestler.y + speed * Math.cos(angleToOpponent);
+                break;
+            case 'Sidestep Right':
+                moveConfig.x = player.wrestler.x + speed * Math.sin(angleToOpponent);
+                moveConfig.y = player.wrestler.y - speed * Math.cos(angleToOpponent);
                 break;
         }
+        this.tweens.add(moveConfig);
     }
 
     createWrestlers() {
@@ -247,10 +246,6 @@ export default class BattleScene extends Phaser.Scene {
     }
 
     // BattleScene.js
-
-    update() {
-        this.handleKeyboardInput();
-    }
     
     handleKeyboardInput() {
         const speed = 5;
