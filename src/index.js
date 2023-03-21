@@ -1,4 +1,7 @@
 import Phaser from 'phaser';
+import BootScene from './scenes/BootScene';
+import MenuScene from './scenes/MenuScene';
+import BattleScene from './scenes/BattleScene';
 import logoImg from './assets/logo.png';
 
 class MyGame extends Phaser.Scene
@@ -30,10 +33,17 @@ class MyGame extends Phaser.Scene
 
 const config = {
     type: Phaser.AUTO,
-    parent: 'phaser-example',
+    parent: 'game-container',
     width: 800,
     height: 600,
-    scene: MyGame
+    scene: [BootScene, MenuScene, BattleScene],
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 0 },
+            debug: false,
+        }
+    }
 };
 
 const game = new Phaser.Game(config);
