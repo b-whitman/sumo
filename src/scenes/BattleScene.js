@@ -41,6 +41,14 @@ export default class BattleScene extends Phaser.Scene {
         this.player2BalanceBar = this.add.rectangle(this.sys.game.config.width - 120, 20, 100, 10, 0x00ff00).setOrigin(0, 0);
     }
 
+    createActionButton(x, y, width, height, color, text, fontSize, callback) {
+        const button = this.add.rectangle(x, y, width, height, color).setOrigin(0, 0);
+        button.setInteractive();
+        button.on('pointerdown', callback);
+        const buttonText = this.add.text(x + width / 2, y + height / 2, text, { fontSize: fontSize, fill: '#000' }).setOrigin(0.5, 0.5);
+        return { button, buttonText };
+    }
+
     createActionButtons() {
         this.actionButtons = this.add.group();
 
@@ -50,37 +58,53 @@ export default class BattleScene extends Phaser.Scene {
         const buttonX = (this.sys.game.config.width - buttonWidth) / 2;
         const buttonY = this.sys.game.config.height - buttonHeight - buttonPadding;
         
-        const pushButton = this.add.rectangle(
+        const pushButton = this.createActionButton(
             buttonX,
             buttonY,
             buttonWidth,
             buttonHeight,
-            0xff0000
-        ).setOrigin(0, 0);
-        pushButton.setInteractive();
-        pushButton.on('pointerdown', () => {
-        this.performAction('push');
-        });
-        this.actionButtons.add(pushButton);
-        const moveButton = this.add.rectangle(
+            0xff0000,
+            'Push',
+            '24px',
+            () => {
+                this.performAction('push');
+            }
+        );
+        this.actionButtons.add(pushButton.button);
+        this.actionButtons.add(pushButton.buttonText);
+
+        const moveButton = this.createActionButton(
             buttonX,
             buttonY - buttonHeight - buttonPadding,
             buttonWidth,
             buttonHeight,
-            0xffd700
-          ).setOrigin(0, 0);
-          moveButton.setInteractive();
-          moveButton.on('pointerdown', () => {
-            this.showMoveOptions();
-          });
-          this.actionButtons.add(moveButton);
-        const moveButtonText = this.add.text(
-            buttonX + buttonWidth / 2,
-            buttonY - buttonHeight - buttonPadding + buttonHeight / 2,
+            0xffd700,
             'Move',
-            { fontSize: '24px', fill: '#000' }
-        ).setOrigin(0.5, 0.5);
-        this.actionButtons.add(moveButtonText);
+            '24px',
+            () => {
+                this.showMoveOptions();
+            }
+        )
+        this.actionButtons.add(moveButton.button);
+        this.actionButtons.add(moveButton.buttonText);
+
+        const logButton = this.createActionButton(
+            buttonX - (buttonWidth + buttonPadding),
+            buttonY - (2 * buttonHeight),
+            buttonWidth,
+            buttonHeight,
+            0x0000ff,
+            'Log',
+            '24px',
+            () => {
+                console.log("Player 1: ", this.player1.x, this.player1.y);
+                console.log("Player 1 wrestler: ", this.player1.wrestler.x, this.player1.wrestler.y);
+                console.log("Player 2: ", this.player2.x, this.player2.y);
+                console.log("Player 2 wrestler: ", this.player2.wrestler.x, this.player2.wrestler.y);
+            }
+        )
+        this.actionButtons.add(logButton.button);
+        this.actionButtons.add(logButton.buttonText);
         this.actionButtons.setDepth(1);
         
         // Create move options (hidden by default)
@@ -166,13 +190,13 @@ export default class BattleScene extends Phaser.Scene {
     executeMoves() {
         console.log('Player 1 Move:', this.player1Move);
         console.log('Player 2 Move:', this.player2Move);
-    
-        // Calculate angle to opponent's initial position for both players
-        let dx = this.player2.wrestler.x - this.player1.wrestler.x;
-        let dy = this.player2.wrestler.y - this.player1.wrestler.y;
+        console.log('Player 1 before executing SumoWrestler position:', this.player1.x, this.player1.y);
+        console.log('Player 1 before executing wrestler circle position', this.player1.wrestler.x, this.player1.wrestler.y);
+        console.log('Player 2 before executing SumoWrestler position:', this.player2.x, this.player2.y);
+        console.log('Player 2 before executing wrestler circle position', this.player2.wrestler.x, this.player2.wrestler.y);
 
-        const angleToOpponent1 = Math.atan2(dy, dx);
-        const angleToOpponent2 = angleToOpponent1 + Math.PI;
+        const angleToOpponent1 = this.player1.facingAngle;
+        const angleToOpponent2 = this.player2.facingAngle;
 
         // Implement move execution logic here
         this.applyPlayerMove(this.player1, this.player1Move, angleToOpponent1);
@@ -182,39 +206,37 @@ export default class BattleScene extends Phaser.Scene {
         this.player2Move = null;
         this.changeInterfaceColor(this.player1.color);
         this.moveOptions.setVisible(false);
+        console.log('Player 1 after executing SumoWrestler position:', this.player1.x, this.player1.y);
+        console.log('Player 1 after executing wrestler circle position', this.player1.wrestler.x, this.player1.wrestler.y);
+        console.log('Player 2 after executing SumoWrestler position:', this.player2.x, this.player2.y);
+        console.log('Player 2 after executing wrestler circle position', this.player2.wrestler.x, this.player2.wrestler.y);
     }
 
     applyPlayerMove(player, move, angleToOpponent) {
         const speed = 50;
-        const duration = 500;
-        const opponent = player.isPlayer1 ? this.player2 : this.player1;
-
-        console.log('angleToOpponent:', angleToOpponent)
-        const moveConfig = {
-            targets: player.wrestler,
-            duration: duration,
-            ease: 'Linear'
-        };
+        let newX, newY;
 
         switch (move) {
             case 'Forward':
-                moveConfig.x = player.wrestler.x + speed * Math.cos(angleToOpponent);
-                moveConfig.y = player.wrestler.y + speed * Math.sin(angleToOpponent);
+                newX = player.x + speed * Math.cos(angleToOpponent);
+                newY = player.y + speed * Math.sin(angleToOpponent);
+                console.log("Player moving forward to: ", newX, newY);
                 break;
             case 'Retreat':
-                moveConfig.x = player.wrestler.x - speed * Math.cos(angleToOpponent);
-                moveConfig.y = player.wrestler.y - speed * Math.sin(angleToOpponent);
+                newX = player.x - speed * Math.cos(angleToOpponent);
+                newY = player.y - speed * Math.sin(angleToOpponent);
                 break;
             case 'Sidestep Left':
-                moveConfig.x = player.wrestler.x - speed * Math.sin(angleToOpponent);
-                moveConfig.y = player.wrestler.y + speed * Math.cos(angleToOpponent);
+                newX = player.x + speed * Math.sin(angleToOpponent);
+                newY = player.y - speed * Math.cos(angleToOpponent);
                 break;
             case 'Sidestep Right':
-                moveConfig.x = player.wrestler.x + speed * Math.sin(angleToOpponent);
-                moveConfig.y = player.wrestler.y - speed * Math.cos(angleToOpponent);
+                newX = player.x - speed * Math.sin(angleToOpponent);
+                newY = player.y + speed * Math.cos(angleToOpponent);
                 break;
         }
-        this.tweens.add(moveConfig);
+        const opponent = player.isPlayer1 ? this.player2 : this.player1;
+        player.update(opponent, newX, newY);
     }
 
     createWrestlers() {
@@ -230,7 +252,6 @@ export default class BattleScene extends Phaser.Scene {
           player1Pattern,
           true
         );
-    
         this.player2 = new SumoWrestler(
           this,
           (this.sys.game.config.width * 3) / 4,
@@ -239,6 +260,9 @@ export default class BattleScene extends Phaser.Scene {
           player2Pattern,
           false
         );
+
+        this.player1.setInitialFacingAngle(this.player2);
+        this.player2.setInitialFacingAngle(this.player1);
     }
 
     update() {

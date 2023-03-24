@@ -18,3 +18,5 @@ design_doc.txt
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
+
+scratch.txt
